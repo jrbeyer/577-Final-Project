@@ -2,6 +2,7 @@ import holoocean
 import numpy as np
 from pynput import keyboard
 from typing import Tuple
+import time
 # import matplotlib.pyplot as plt
 
 
@@ -13,10 +14,12 @@ env_refresh_rate = 1/30
 # Control rate (s)
 control_rate = 1/30
 
-pitch_kp = 0.1
-pitch_ki = 0.0025
+pitch_kp = 1.1
+pitch_ki = 0.001
+pitch_kd = 3
 pitch_integrator = 0
-pitch_i_saturation = 0.7
+pitch_i_saturation = 1
+pitch_prior_error = 0
 pitch_command_clip = 2
 
 yaw_kp = 1.1
@@ -24,7 +27,7 @@ yaw_kp = 1.1
 yaw_ki = 0.001
 yaw_kd = 3
 yaw_integrator = 0
-yaw_i_saturation = 0.1
+yaw_i_saturation = 1
 yaw_prior_error = 0
 yaw_command_clip = 2
 
@@ -69,22 +72,21 @@ def control_law() -> np.ndarray:
     command = np.array([5,5,-5,-5,0,0,0,0])
     return command
 
-# test closing yaw loop
+# yaw control law
 # yaw_current: degrees
 # yaw_commanded: degrees
-# output: 8x1 vector of thruster commands
-def test_yaw_control(yaw_current, yaw_commanded) -> Tuple[np.ndarray, float, float, float, float, float]:
+# output: 8x1 vector of differential thruster commands
+def yaw_loop(yaw_current, yaw_desired) -> Tuple[np.ndarray, float, float, float, float, float]:
     global yaw_integrator
     global yaw_prior_error
 
     nominal_command = np.ndarray(8)
     nominal_command.fill(0)
-    # nominal_command = np.array([0,0,0,0,4,4,4,4])
 
     unit_rotation_command = np.array([0,0,0,0,-1,1,1,-1])
 
     # constrain yaw_error to -180 to 180
-    yaw_error = yaw_commanded - yaw_current
+    yaw_error = yaw_desired - yaw_current
     if yaw_error > 180:
         yaw_error = yaw_error - 360
     elif yaw_error <= -180:
@@ -95,43 +97,91 @@ def test_yaw_control(yaw_current, yaw_commanded) -> Tuple[np.ndarray, float, flo
     yaw_integrator += yaw_ki * yaw_error * control_rate
     yaw_integrator = np.clip(yaw_integrator, -yaw_i_saturation, yaw_i_saturation)
     yaw_derivative = yaw_kd * (yaw_error - yaw_prior_error) / control_rate
-    yaw_command = yaw_proportional + yaw_integrator + yaw_derivative
-    yaw_command = np.clip(yaw_command, -yaw_command_clip, yaw_command_clip)
+    yaw_pid_out = yaw_proportional + yaw_integrator + yaw_derivative
+    yaw_pid_out = np.clip(yaw_pid_out, -yaw_command_clip, yaw_command_clip)
 
     yaw_prior_error = yaw_error
 
-    # add yaw command to nominal command
-    return (nominal_command + (yaw_command * unit_rotation_command), yaw_error, yaw_command, yaw_proportional, yaw_integrator, yaw_derivative)
+    return (yaw_pid_out * unit_rotation_command, yaw_error, yaw_pid_out, yaw_proportional, yaw_integrator, yaw_derivative)
+
+# pitch control law
+# pitch_current: degrees
+# pitch_commanded: degrees
+# output: 8x1 vector of differential thruster commands
+def pitch_loop(pitch_current, pitch_desired) -> Tuple[np.ndarray, float, float, float, float, float]:
+    global pitch_integrator
+    global pitch_prior_error
+
+    nominal_command = np.ndarray(8)
+    nominal_command.fill(0)
+
+    unit_rotation_command = np.array([-1,-1,1,1,0,0,0,0])
+
+    # constrain pitch_error to -180 to 180
+    pitch_error = pitch_desired - pitch_current
+    if pitch_error > 180:
+        pitch_error = pitch_error - 360
+    elif pitch_error <= -180:
+        pitch_error = pitch_error + 360
+
+    # pitch control law
+    pitch_proportional = pitch_kp * pitch_error
+    pitch_integrator += pitch_ki * pitch_error * control_rate
+    pitch_integrator = np.clip(pitch_integrator, -pitch_i_saturation, pitch_i_saturation)
+    pitch_derivative = pitch_kd * (pitch_error - pitch_prior_error) / control_rate
+    pitch_pid_out = pitch_proportional + pitch_integrator + pitch_derivative
+    pitch_pid_out = np.clip(pitch_pid_out, -pitch_command_clip, pitch_command_clip)
+
+    pitch_prior_error = pitch_error
+
+    return (pitch_pid_out * unit_rotation_command, pitch_error, pitch_pid_out, pitch_proportional, pitch_integrator, pitch_derivative)
 
 
 
 if __name__ == "__main__":
     with holoocean.make("PierHarbor-Hovering") as env:
         env.set_render_quality(1)
-        command = np.ndarray(8)
-        command.fill(0)
-        yaw_commanded = 180
+        nominal_command = np.ndarray(8)
+        nominal_command.fill(0)
+        command = nominal_command
+        yaw_desired = -90
+        pitch_desired = -4
         for i in range(100000):
             if 'q' in pressed_keys:
                 break
             state = env.step(command)
+            # time.sleep(0.1)
 
             orientation = state["PoseSensor"][0:3,0:3]
             fx = orientation[0,0]
             fy = orientation[0,1]
             uz = orientation[2,2]
             yaw = np.arctan2(fx, fy)*180/np.pi
-            # pitch = np.arccos(-uz)*180/np.pi
-            command, yaw_error, yaw_command, yaw_proportional, yaw_integrator, yaw_derivative = test_yaw_control(yaw, yaw_commanded)
+            pitch = np.arccos(-uz)*180/np.pi
+            yaw_command, yaw_error, yaw_pid_out, yaw_proportional, yaw_integrator, yaw_derivative = yaw_loop(yaw, yaw_desired)
+            pitch_command, pitch_error, pitch_pid_out, pitch_proportional, pitch_integrator, pitch_derivative = pitch_loop(pitch, pitch_desired)
+
+            command = nominal_command + yaw_command + pitch_command
 
             if i % 10 == 0:
+                print(f'Yaw desired: {yaw_desired}')
                 print(f'Yaw: {yaw:.6}')
                 print(f'Yaw error: {yaw_error:.6}')
                 print(f'Yaw proportional: {yaw_proportional:.6}')
                 print(f'Yaw integrator: {yaw_integrator:.6}')
                 print(f'Yaw derivative: {yaw_derivative:.6}')
-                print(f'Yaw command: {yaw_command:.6}')
+                print(f'Yaw PID out: {yaw_pid_out:.6}')
+                print(f'Pitch desired: {pitch_desired}')
+                print(f'Pitch: {pitch:.6}')
+                print(f'Pitch error: {pitch_error:.6}')
+                print(f'Pitch proportional: {pitch_proportional:.6}')
+                print(f'Pitch integrator: {pitch_integrator:.6}')
+                print(f'Pitch derivative: {pitch_derivative:.6}')
+                print(f'Pitch PID out: {pitch_pid_out:.6}')
+                print(f'Yaw command: {yaw_command}')
+                print(f'Pitch command: {pitch_command}')
                 print(f'Command: {command}\n')
+
 
             # if i % control_rate == 0:
             #     print(f'State: {state}')
