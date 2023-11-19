@@ -1,0 +1,98 @@
+import holoocean
+import numpy as np
+from pynput import keyboard
+from typing import Tuple, List, Dict
+import time
+import my_configs as config
+from agent_wrapper import agent
+
+# number of environment ticks between control updates
+control_ticks_per_update = 5
+
+# Keyboard listener for exiting simulation
+pressed_keys = list()
+def on_press(key):
+    global pressed_keys
+    if hasattr(key, 'char'):
+        pressed_keys.append(key.char)
+        pressed_keys = list(set(pressed_keys))
+def on_release(key):
+    global pressed_keys
+    if hasattr(key, 'char'):
+        pressed_keys.remove(key.char)
+listener = keyboard.Listener(
+    on_press=on_press,
+    on_release=on_release)
+listener.start()
+
+# Create list of agents, named by their index in the list
+def create_agent_list(cfg: Dict) -> List[agent]:
+    agent_list = []
+    ticks_per_sec = cfg["ticks_per_sec"]
+    for agent_cfg in cfg["agents"]:
+        agent_list.append(agent(name=agent_cfg["agent_name"], 
+                                env_refresh_rate=1/ticks_per_sec, 
+                                control_ticks_per_update=control_ticks_per_update))
+    return agent_list
+
+# Update pose of all agents from the global state
+def update_all_agent_poses(agent_list: List[agent], state) -> None:
+    for agent in agent_list:
+        agent.update_pose(state[agent.name]['PoseSensor'])
+
+
+# Execute line following control loop for all agents
+# agent_list: list of all agents, as created by create_agent_list()
+# lines: list of lines to be followed by each agent
+#           lines[i] is a tuple of (start_point, end_point) for the line to be 
+#           followed by agent i
+# returns: list of controls for each agent
+def control_all_agents(agent_list: List[agent], 
+                       lines: List[Tuple[np.ndarray, np.ndarray]]
+                       ) -> List[np.ndarray]:
+    control_list = []
+    for agent, line in zip(agent_list, lines):
+        control_list.append(agent.compute_control(line[0], line[1]))
+    return control_list
+
+
+if __name__ == '__main__':
+    # Load config
+    cfg = config.get_multi_agent_test_cfg()
+    # Create agent list
+    agent_list = create_agent_list(cfg)
+
+    # Create environment
+    with holoocean.make(scenario_cfg=cfg) as env:
+        # Run simulation
+        state = env.tick()
+        update_all_agent_poses(agent_list, state)
+
+        # Create line list
+        lines = []
+        for a in agent_list:
+            W_i1 = a.position + np.array([10, -10, -3])
+            lines.append((a.position, W_i1))
+        for i, line in enumerate(lines):
+            color = [255* (i+1) / len(lines),0,0] 
+            env.draw_line([c for c in line[0]], [c for c in line[1]], color=color, lifetime=0)
+        control_list = []
+        for a in agent_list:
+            control_list.append(a.nominal_command)
+
+        iteration = 0
+        while iteration < 50000:
+            # Check for exit key
+            if '`' in pressed_keys:
+                break
+            # Update all agent poses
+            update_all_agent_poses(agent_list, state)
+            # Control all agents
+            if iteration % control_ticks_per_update == 0:
+                control_list = control_all_agents(agent_list, lines)
+            
+            # Send commands and step environment
+            for a, control in zip(agent_list, control_list):
+                env.act(a.name, control)
+            state = env.tick()
+            iteration += 1

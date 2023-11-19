@@ -8,7 +8,7 @@ class agent:
 
         self.env_refresh_rate = env_refresh_rate
         self.control_ticks_per_update = control_ticks_per_update
-        self.control_rate = self.env_refresh_rate * self.control_ticks_per_update
+        self.control_rate = self.env_refresh_rate*self.control_ticks_per_update
 
         self.pitch_kp = 0.05
         self.pitch_ki = 0.1
@@ -26,6 +26,8 @@ class agent:
         self.yaw_prior_error = 0
         self.yaw_command_clip = 3
 
+        self.nominal_command = np.array([0,0,0,0,9,9,9,9])
+
     def update_pose(self, pose):
         self.orientation = pose[0:3,0:3]
         self.position = pose[0:3,3]
@@ -35,7 +37,8 @@ class agent:
         self.yaw = np.arctan2(self.fy, self.fx)*180/np.pi
         self.pitch = np.arcsin(-self.fz)*180/np.pi
 
-    def yaw_loop(self, yaw_desired) -> Tuple[np.ndarray, float, float, float, float, float]:
+    def yaw_loop(self, yaw_desired
+                 ) -> Tuple[np.ndarray, float, float, float, float, float]:
         nominal_command = np.ndarray(8)
         nominal_command.fill(0)
 
@@ -51,16 +54,24 @@ class agent:
         # yaw control law
         yaw_proportional = self.yaw_kp * yaw_error
         self.yaw_integrator += self.yaw_ki * yaw_error * self.control_rate
-        self.yaw_integrator = np.clip(self.yaw_integrator, -self.yaw_i_saturation, self.yaw_i_saturation)
+        self.yaw_integrator = np.clip(self.yaw_integrator, 
+                                      -self.yaw_i_saturation, 
+                                      self.yaw_i_saturation)
         yaw_derivative = self.yaw_kd * (yaw_error - self.yaw_prior_error) / self.control_rate
         yaw_pid_out = yaw_proportional + self.yaw_integrator + yaw_derivative
         yaw_pid_out = np.clip(yaw_pid_out, -self.yaw_command_clip, self.yaw_command_clip)
 
         self.yaw_prior_error = yaw_error
 
-        return (yaw_pid_out * unit_rotation_command, yaw_error, yaw_pid_out, yaw_proportional, self.yaw_integrator, yaw_derivative)
+        return (yaw_pid_out * unit_rotation_command, 
+                yaw_error, 
+                yaw_pid_out, 
+                yaw_proportional, 
+                self.yaw_integrator, 
+                yaw_derivative)
     
-    def pitch_loop(self, pitch_desired) -> Tuple[np.ndarray, float, float, float, float, float]:
+    def pitch_loop(self, pitch_desired
+                   ) -> Tuple[np.ndarray, float, float, float, float, float]:
         nominal_command = np.ndarray(8)
         nominal_command.fill(0)
 
@@ -83,7 +94,12 @@ class agent:
 
         self.pitch_prior_error = pitch_error
 
-        return (pitch_pid_out * unit_rotation_command, pitch_error, pitch_pid_out, pitch_proportional, self.pitch_integrator, pitch_derivative)
+        return (pitch_pid_out * unit_rotation_command,
+                pitch_error, 
+                pitch_pid_out, 
+                pitch_proportional, 
+                self.pitch_integrator, 
+                pitch_derivative)
     
     # pure pursuit law
     # adapted from Pelizer et al. (2017)
@@ -94,12 +110,19 @@ class agent:
     def pure_pursuit(self, W_i, W_i1) -> Tuple[float, float]:
         position = self.position.reshape(-1,1)
         alpha = np.arctan2(W_i1[1]-W_i[1], W_i1[0]-W_i[0])
-        yaw_desired = np.arctan2(W_i1[1]-position[1], W_i1[0]-position[0])*180/np.pi
+
+        v = self.position - W_i
+        s = W_i1 - W_i
+        u = np.dot(v,s)*s / np.dot(s,s)
+        # midpoint = (W_i1-W_i + u)/2 + W_i
+        midpoint = 0.3*(W_i1-W_i) + 0.7*u + W_i
+        yaw_desired = np.arctan2(midpoint[1]-position[1], midpoint[0]-position[0])*180/np.pi
+        # yaw_desired = np.arctan2(W_i1[1]-position[1], W_i1[0]-position[0])*180/np.pi
 
 
         Rz = np.array([[np.cos(alpha),  np.sin(alpha),  0],
-                    [-np.sin(alpha), np.cos(alpha),  0],
-                    [0,              0,              1]])
+                       [-np.sin(alpha), np.cos(alpha),  0],
+                       [0,              0,              1]])
 
         W_i1_r = Rz @ W_i1
         position_r = Rz @ position
@@ -117,3 +140,22 @@ class agent:
         # e = Ry*Rz*(position - W_i)
         
         return (yaw_desired[0], pitch_desired[0])
+    
+    # Compute control law to be executed for pure pursuit
+    # returns: command vector
+    def compute_control(self, W_i, W_i1) -> np.ndarray:
+        yaw_desired, pitch_desired = self.pure_pursuit(W_i, W_i1)
+        yaw_command = self.yaw_loop(yaw_desired)
+        pitch_command = self.pitch_loop(pitch_desired)
+        # print('='*20)
+        # print(f'Agent {self.name}')
+        # print(f'Position: {self.position}')
+        # print(f'Yaw: {self.yaw}')
+        # print(f'Yaw desired: {yaw_desired}')
+        # print(f'Pitch: {self.pitch}')
+        # print(f'Pitch desired: {pitch_desired}')
+        # print(f'Yaw command: {yaw_command[0]}')
+        # print(f'Pitch command: {pitch_command[0]}')
+        # print(f'Final command: {self.nominal_command + yaw_command[0] + pitch_command[0]}')
+        # print('='*20)
+        return self.nominal_command + yaw_command[0] + pitch_command[0]

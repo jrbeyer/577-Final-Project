@@ -3,7 +3,7 @@ import numpy as np
 from pynput import keyboard
 from typing import Tuple
 import time
-import my_configs as cfg
+import my_configs as config
 from agent_wrapper import agent
 # import matplotlib.pyplot as plt
 
@@ -60,7 +60,7 @@ listener.start()
 def test_holoocean():
     # The hovering AUV takes a command for each thruster
     command = np.array([5,5,-5,-5,0,0,0,0])
-    env_cfg = cfg.get_single_agent_test_cfg()
+    env_cfg = config.get_single_agent_test_cfg()
 
     with holoocean.make("PierHarbor-Hovering") as env:
         env.set_render_quality(1)
@@ -179,7 +179,7 @@ def pure_pursuit(W_i, W_i1, position) -> Tuple[float, float]:
 VERBOSE = False
 
 if __name__ == "__main__":
-    env_cfg = cfg.get_single_agent_test_cfg()
+    env_cfg = config.get_single_agent_test_cfg()
     # print(f'env_cfg: {env_cfg}')
     # with holoocean.make("PierHarbor-Hovering") as env:
         # print(f'Environment info: \n{env.info()}')
@@ -194,8 +194,8 @@ if __name__ == "__main__":
         auv0 = agent('auv0', env_refresh_rate, control_ticks_per_update)
 
         state = env.tick()
-        W_i = state["PoseSensor"][0:3,3]
-        W_i1 = W_i + np.array([20,20,-4])
+        W_i = np.array([5, 5, -5])
+        W_i1 = W_i + np.array([20,-20,-4])
 
         env.draw_box([c for c in W_i1], [1, 1, 1], lifetime=0)
         env.draw_line([c for c in W_i], [c for c in W_i1], lifetime=0)
@@ -223,6 +223,13 @@ if __name__ == "__main__":
                 yaw_command, yaw_error, yaw_pid_out, yaw_proportional, yaw_integrator, yaw_derivative = auv0.yaw_loop(yaw_desired)
                 pitch_command, pitch_error, pitch_pid_out, pitch_proportional, pitch_integrator, pitch_derivative = auv0.pitch_loop(pitch_desired)
                 command = nominal_command + pitch_command + yaw_command
+
+                v = position - W_i
+                s = W_i1 - W_i
+                u = np.dot(v,s)*s / np.dot(s,s)
+                # midpoint = (W_i1-W_i + u)/2 + W_i
+                midpoint = 0.3*(W_i1-W_i) + 0.7*u + W_i
+                env.draw_box([c for c in midpoint], extent=[1,1,1], color=[0,255,0], lifetime=0.1)
 
             env.act('auv0', command)
             state = env.tick()
