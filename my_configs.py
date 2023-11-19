@@ -33,14 +33,14 @@ def get_multi_agent_test_cfg():
     "world": "SimpleUnderwater",
     "package_name": "Ocean",
     "main_agent": "auv0",
-    "ticks_per_sec": 30,
+    "ticks_per_sec": 100,
     "agents": [
         {
             "agent_name": "auv0",
-            "agent_type": "TorpedoAUV",
+            "agent_type": "HoveringAUV",
             "sensors": [
                 {
-                    "sensor_type": "IMUSensor"
+                    "sensor_type": "PoseSensor"
                 }
             ],
             "control_scheme": 0,
@@ -51,11 +51,44 @@ def get_multi_agent_test_cfg():
             "agent_type": "HoveringAUV",
             "sensors": [
                 {
-                    "sensor_type": "DVLSensor"
+                    "sensor_type": "PoseSensor"
                 }
             ],
             "control_scheme": 0,
             "location": [0, 2, -5]
+        },
+        {
+            "agent_name": "auv2",
+            "agent_type": "HoveringAUV",
+            "sensors": [
+                {
+                    "sensor_type": "PoseSensor"
+                }
+            ],
+            "control_scheme": 0,
+            "location": [0, 4, -5]
+        },
+        {
+            "agent_name": "auv3",
+            "agent_type": "HoveringAUV",
+            "sensors": [
+                {
+                    "sensor_type": "PoseSensor"
+                }
+            ],
+            "control_scheme": 0,
+            "location": [0, 6, -5]
+        },
+        {
+            "agent_name": "auv4",
+            "agent_type": "HoveringAUV",
+            "sensors": [
+                {
+                    "sensor_type": "PoseSensor"
+                }
+            ],
+            "control_scheme": 0,
+            "location": [0, 8, -5]
         }
     ]
     }

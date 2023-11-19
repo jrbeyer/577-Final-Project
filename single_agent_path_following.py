@@ -4,6 +4,7 @@ from pynput import keyboard
 from typing import Tuple
 import time
 import my_configs as cfg
+from agent_wrapper import agent
 # import matplotlib.pyplot as plt
 
 
@@ -159,9 +160,6 @@ def pure_pursuit(W_i, W_i1, position) -> Tuple[float, float]:
 
     W_i1_r = Rz @ W_i1
     position_r = Rz @ position
-    # print(f'Position: {position}')
-    # print(f'Rz: \n{Rz}')
-    # print(f'Position_r: {position_r}')
 
     pitch_desired = np.arctan2(position_r[2]-W_i1_r[2], W_i1_r[0]-position_r[0])*180/np.pi
 
@@ -178,7 +176,7 @@ def pure_pursuit(W_i, W_i1, position) -> Tuple[float, float]:
     return (yaw_desired[0], pitch_desired[0])
 
 
-VERBOSE = True
+VERBOSE = False
 
 if __name__ == "__main__":
     env_cfg = cfg.get_single_agent_test_cfg()
@@ -193,16 +191,15 @@ if __name__ == "__main__":
         yaw_desired = 0
         pitch_desired = 0
 
-        state = env.step(command)
+        auv0 = agent('auv0', env_refresh_rate, control_ticks_per_update)
+
+        state = env.tick()
         W_i = state["PoseSensor"][0:3,3]
         W_i1 = W_i + np.array([20,20,-4])
 
-        env.draw_box([c for c in W_i1], [3, 3, 3], lifetime=0)
+        env.draw_box([c for c in W_i1], [1, 1, 1], lifetime=0)
         env.draw_line([c for c in W_i], [c for c in W_i1], lifetime=0)
 
-        env.draw_line([0, 0, 0], [5, 0, 0], color=[255,0,0], lifetime=0)
-        env.draw_line([0, 0, 0], [0, 5, 0], color=[0,255,0], lifetime=0)
-        env.draw_line([0, 0, 0], [0, 0, 5], color=[0,0,255], lifetime=0)
 
         print(f'Initial position: {W_i}')
         print(f'Final position: {W_i1}')
@@ -211,7 +208,6 @@ if __name__ == "__main__":
         for i in range(100000):
             if '`' in pressed_keys:
                 break
-            state = env.step(command)
             # time.sleep(0.1)
 
             if i % control_ticks_per_update == 0:
@@ -222,18 +218,14 @@ if __name__ == "__main__":
                 fz = orientation[2,0]
                 yaw = np.arctan2(fy, fx)*180/np.pi
                 pitch = np.arcsin(-fz)*180/np.pi
-                yaw_desired, pitch_desired = pure_pursuit(W_i, W_i1, position)
-                yaw_command, yaw_error, yaw_pid_out, yaw_proportional, yaw_integrator, yaw_derivative = yaw_loop(yaw, yaw_desired)
-                pitch_command, pitch_error, pitch_pid_out, pitch_proportional, pitch_integrator, pitch_derivative = pitch_loop(pitch, pitch_desired)
+                auv0.update_pose(state["PoseSensor"])
+                yaw_desired, pitch_desired = auv0.pure_pursuit(W_i, W_i1)
+                yaw_command, yaw_error, yaw_pid_out, yaw_proportional, yaw_integrator, yaw_derivative = auv0.yaw_loop(yaw_desired)
+                pitch_command, pitch_error, pitch_pid_out, pitch_proportional, pitch_integrator, pitch_derivative = auv0.pitch_loop(pitch_desired)
                 command = nominal_command + pitch_command + yaw_command
 
-                # print('\n\n==================')
-                # print(f'Iteration: {i}')
-                # print(f'Position error: {position - W_i1}')
-                # print(f'yaw desired: {yaw_desired}')
-                # print(f'pitch desired: {pitch_desired}')
-                
-                # print('==================\n\n')
+            env.act('auv0', command)
+            state = env.tick()
 
             if i % (5*control_ticks_per_update) == 0:
                 print(f'\nIteration: {i}')
@@ -259,5 +251,4 @@ if __name__ == "__main__":
                     # print(f'Pitch PID out: {pitch_pid_out:.6}')
                     print(f'Yaw command: {yaw_command}')
                     print(f'Pitch command: {pitch_command}')
-
 
