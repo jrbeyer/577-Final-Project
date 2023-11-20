@@ -145,11 +145,20 @@ class agent:
         return (yaw_desired[0], pitch_desired[0])
     
     # Compute control law to be executed for pure pursuit
+    # Attenuates speed when reaching goal
     # returns: command vector
     def compute_control(self, W_i, W_i1) -> np.ndarray:
         yaw_desired, pitch_desired = self.pure_pursuit(W_i, W_i1)
         yaw_command = self.yaw_loop(yaw_desired)
         pitch_command = self.pitch_loop(pitch_desired)
+
+        attenuated_nominal_command = self.nominal_command
+        l2norm = np.linalg.norm(self.position - W_i1)
+        l2norm_limit = 4.0
+
+        if l2norm < l2norm_limit:
+            attenuated_nominal_command = (l2norm/l2norm_limit)*self.nominal_command
+
         # print('='*20)
         # print(f'Agent {self.name}')
         # print(f'Position: {self.position}')
@@ -161,4 +170,4 @@ class agent:
         # print(f'Pitch command: {pitch_command[0]}')
         # print(f'Final command: {self.nominal_command + yaw_command[0] + pitch_command[0]}')
         # print('='*20)
-        return self.nominal_command + yaw_command[0] + pitch_command[0]
+        return attenuated_nominal_command + yaw_command[0] + pitch_command[0]
