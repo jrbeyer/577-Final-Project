@@ -27,6 +27,7 @@ class agent:
         self.yaw_command_clip = 3
 
         self.nominal_command = np.array([0,0,0,0,9,9,9,9])
+        self.position = np.array([0,0,0])
 
         self.setpoint = np.array([0,0,0])
 
@@ -155,9 +156,12 @@ class agent:
         attenuated_nominal_command = self.nominal_command
         l2norm = np.linalg.norm(self.position - W_i1)
         l2norm_limit = 4.0
+        l2norm_stop_limit = 0.4
 
         if l2norm < l2norm_limit:
             attenuated_nominal_command = (l2norm/l2norm_limit)*self.nominal_command
+        if l2norm < l2norm_stop_limit:
+            attenuated_nominal_command = np.zeros(8)
 
         # print('='*20)
         # print(f'Agent {self.name}')
@@ -171,3 +175,28 @@ class agent:
         # print(f'Final command: {self.nominal_command + yaw_command[0] + pitch_command[0]}')
         # print('='*20)
         return attenuated_nominal_command + yaw_command[0] + pitch_command[0]
+    
+    # Compute simple control law for turning to view a point
+    # point: 3D point to look at
+    # returns: command vector
+    def compute_turn_control(self, point: np.ndarray) -> np.ndarray:
+        yaw_desired = np.arctan2(point[1]-self.position[1], 
+                                 point[0]-self.position[0])*180/np.pi
+        yaw_command = self.yaw_loop(yaw_desired)
+        return yaw_command[0]
+    
+
+    # Compute if a point is within the field of view of the agent, assuming
+    # a 5 degree blind spot behind the agent (after Berlinger et al. 2021)
+    # point: 3D point to check
+    # returns: boolean
+    def can_see_point(self, point: np.ndarray) -> bool:
+        max_angle = 175
+        d = point - self.position
+        f = self.orientation[:,0]
+        relative_angle = abs(np.arccos(np.dot(d, f) 
+                                   / np.linalg.norm(d)))*180/np.pi
+        # print(f'relative angle: {relative_angle}')
+        # print(f'd: {d}')
+        # print(f'f: {f}')
+        return relative_angle < max_angle
