@@ -73,9 +73,6 @@ if __name__ == '__main__':
         for a in agent_list:
             W_i1 = a.position + np.array([10, -10, -3])
             lines.append((a.position, W_i1))
-        for i, line in enumerate(lines):
-            color = [255* (i+1) / len(lines),0,0] 
-            env.draw_line([c for c in line[0]], [c for c in line[1]], color=color, lifetime=0)
         control_list = []
         for a in agent_list:
             control_list.append(a.nominal_command)
@@ -90,6 +87,9 @@ if __name__ == '__main__':
             # Control all agents
             if iteration % control_ticks_per_update == 0:
                 control_list = control_all_agents(agent_list, lines)
+                for a in agent_list:
+                    env.draw_point([c for c in a.setpoint], [255, 0, 0], lifetime=0.1)
+                    
             
             # Send commands and step environment
             for a, control in zip(agent_list, control_list):

@@ -28,6 +28,8 @@ class agent:
 
         self.nominal_command = np.array([0,0,0,0,9,9,9,9])
 
+        self.setpoint = np.array([0,0,0])
+
     def update_pose(self, pose):
         self.orientation = pose[0:3,0:3]
         self.position = pose[0:3,3]
@@ -107,6 +109,7 @@ class agent:
     # W_i1: final position of line to track
     # position: current position of AUV
     # output: (yaw_desired, pitch_desired)
+    # modifies: self.setpoint
     def pure_pursuit(self, W_i, W_i1) -> Tuple[float, float]:
         position = self.position.reshape(-1,1)
         alpha = np.arctan2(W_i1[1]-W_i[1], W_i1[0]-W_i[0])
@@ -114,8 +117,8 @@ class agent:
         v = self.position - W_i
         s = W_i1 - W_i
         u = np.dot(v,s)*s / np.dot(s,s)
-        # midpoint = (W_i1-W_i + u)/2 + W_i
         midpoint = 0.3*(W_i1-W_i) + 0.7*u + W_i
+        self.setpoint = midpoint
         yaw_desired = np.arctan2(midpoint[1]-position[1], midpoint[0]-position[0])*180/np.pi
         # yaw_desired = np.arctan2(W_i1[1]-position[1], W_i1[0]-position[0])*180/np.pi
 
