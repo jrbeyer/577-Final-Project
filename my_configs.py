@@ -44,7 +44,7 @@ def get_multi_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": [0, 0, -5]
+            "location": [10, 10, -5]
         },
         {
             "agent_name": "auv1",
@@ -55,7 +55,7 @@ def get_multi_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": [0, 2, -5]
+            "location": [10, -10, -5]
         },
         {
             "agent_name": "auv2",
@@ -66,7 +66,7 @@ def get_multi_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": [0, 4, -5]
+            "location": [-10, 10, -5]
         },
         {
             "agent_name": "auv3",
@@ -77,7 +77,7 @@ def get_multi_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": [0, 6, -5]
+            "location": [-10, -10, -5]
         },
         {
             "agent_name": "auv4",
@@ -88,7 +88,7 @@ def get_multi_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": [0, 8, -5]
+            "location": [0, 12, -5]
         }
     ]
     }

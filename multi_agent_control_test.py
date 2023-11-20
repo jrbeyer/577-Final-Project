@@ -55,6 +55,19 @@ def control_all_agents(agent_list: List[agent],
         control_list.append(agent.compute_control(line[0], line[1]))
     return control_list
 
+# create line list depending on type of scenario
+def create_line_list(agent_list: List[agent], scenario: str='simple') -> List[Tuple[np.ndarray, np.ndarray]]:
+    lines = []
+    if scenario == 'simple':
+        for a in agent_list:
+            W_i1 = a.position + np.array([10, -10, -3])
+            lines.append((a.position, W_i1))
+    if scenario == 'middle':
+        for a in agent_list:
+            W_i1 = np.array([0, 0, -5])
+            lines.append((a.position, W_i1))
+
+    return lines
 
 if __name__ == '__main__':
     # Load config
@@ -69,10 +82,7 @@ if __name__ == '__main__':
         update_all_agent_poses(agent_list, state)
 
         # Create line list
-        lines = []
-        for a in agent_list:
-            W_i1 = a.position + np.array([10, -10, -3])
-            lines.append((a.position, W_i1))
+        lines = create_line_list(agent_list, scenario='middle')
         control_list = []
         for a in agent_list:
             control_list.append(a.nominal_command)
@@ -89,8 +99,7 @@ if __name__ == '__main__':
                 control_list = control_all_agents(agent_list, lines)
                 for a in agent_list:
                     env.draw_point([c for c in a.setpoint], [255, 0, 0], lifetime=0.1)
-                    
-            
+
             # Send commands and step environment
             for a, control in zip(agent_list, control_list):
                 env.act(a.name, control)
