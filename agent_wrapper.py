@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List
 
 #   Wrap the agent in an object to make it easier to use
 class agent:
@@ -111,7 +111,7 @@ class agent:
     # position: current position of AUV
     # output: (yaw_desired, pitch_desired)
     # modifies: self.setpoint
-    def pure_pursuit(self, W_i, W_i1) -> Tuple[float, float]:
+    def compute_pure_pursuit_angles(self, W_i, W_i1) -> Tuple[float, float]:
         position = self.position.reshape(-1,1)
         alpha = np.arctan2(W_i1[1]-W_i[1], W_i1[0]-W_i[0])
 
@@ -148,8 +148,8 @@ class agent:
     # Compute control law to be executed for pure pursuit
     # Attenuates speed when reaching goal
     # returns: command vector
-    def compute_control(self, W_i, W_i1) -> np.ndarray:
-        yaw_desired, pitch_desired = self.pure_pursuit(W_i, W_i1)
+    def compute_pure_pursuit_command(self, W_i, W_i1) -> np.ndarray:
+        yaw_desired, pitch_desired = self.compute_pure_pursuit_angles(W_i, W_i1)
         yaw_command = self.yaw_loop(yaw_desired)
         pitch_command = self.pitch_loop(pitch_desired)
 
@@ -200,3 +200,22 @@ class agent:
         # print(f'd: {d}')
         # print(f'f: {f}')
         return relative_angle < max_angle
+    
+    # Compute the next pure pursuit setpoint using Lennard-Jones potential
+    # adapted from Berlinger et al. 2021
+    # agent_list: list of all agents in the environment (including self)
+    # target_distance: target neighbor distance
+    # returns: next setpoint
+    def compute_lj_setpoint(self, agent_list: List['agent'], target_distance: float) -> np.ndarray:
+        a = 12
+        b = 6
+        # compute the setpoint for the current agent
+        setpoint = np.zeros(3)
+        for other_agent in agent_list:
+            if other_agent.name != self.name: # names are unique
+                distance = self.position - other_agent.position
+                distance_norm = np.linalg.norm(distance)
+                target_norm = target_distance/distance_norm
+                unit_distance = distance/distance_norm
+                setpoint += (a*(target_norm)**a - 2*b*(target_norm)**b)*unit_distance
+        return setpoint / (len(agent_list)-1)

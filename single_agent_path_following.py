@@ -219,7 +219,7 @@ if __name__ == "__main__":
                 yaw = np.arctan2(fy, fx)*180/np.pi
                 pitch = np.arcsin(-fz)*180/np.pi
                 auv0.update_pose(state["PoseSensor"])
-                yaw_desired, pitch_desired = auv0.pure_pursuit(W_i, W_i1)
+                yaw_desired, pitch_desired = auv0.compute_pure_pursuit_angles(W_i, W_i1)
                 yaw_command, yaw_error, yaw_pid_out, yaw_proportional, yaw_integrator, yaw_derivative = auv0.yaw_loop(yaw_desired)
                 pitch_command, pitch_error, pitch_pid_out, pitch_proportional, pitch_integrator, pitch_derivative = auv0.pitch_loop(pitch_desired)
                 command = nominal_command + pitch_command + yaw_command

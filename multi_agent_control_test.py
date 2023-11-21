@@ -52,7 +52,18 @@ def control_all_agents(agent_list: List[agent],
                        ) -> List[np.ndarray]:
     control_list = []
     for agent, line in zip(agent_list, lines):
-        control_list.append(agent.compute_control(line[0], line[1]))
+        control_list.append(agent.compute_pure_pursuit_command(line[0], line[1]))
+    return control_list
+
+# Execute control loop under Lennard-Jones potentials for all agents
+# agent_list: list of all agents, as created by create_agent_list()
+# returns: list of controls for each agent
+def control_all_agents_lj(agent_list: List[agent], target_distance: float) -> List[np.ndarray]:
+    control_list = []
+    for agent in agent_list:
+        setpoint = agent.compute_lj_setpoint(agent_list, target_distance)
+        line = (agent.position, setpoint)
+        control_list.append(agent.compute_pure_pursuit_command(line[0], line[1]))
     return control_list
 
 # create line list depending on type of scenario
@@ -71,7 +82,7 @@ def create_line_list(agent_list: List[agent], scenario: str='simple') -> List[Tu
 
 if __name__ == '__main__':
     # Load config
-    cfg = config.get_multi_agent_test_cfg()
+    cfg = config.get_many_agent_test_cfg()
     # Create agent list
     agent_list = create_agent_list(cfg)
 
@@ -88,7 +99,11 @@ if __name__ == '__main__':
             control_list.append(a.nominal_command)
 
         iteration = 0
+        target_distance = 10
         while iteration < 50000:
+            if iteration == 5000:
+                target_distance = 4
+                env.draw_box([0, 0, 0], [5, 5, 5], [0, 255, 0], lifetime = 5)
             # Check for exit key
             if '`' in pressed_keys:
                 break
@@ -96,9 +111,10 @@ if __name__ == '__main__':
             update_all_agent_poses(agent_list, state)
             # Control all agents
             if iteration % control_ticks_per_update == 0:
-                control_list = control_all_agents(agent_list, lines)
+                # control_list = control_all_agents(agent_list, lines)
+                control_list = control_all_agents_lj(agent_list, target_distance)
                 for a in agent_list:
-                    env.draw_point([c for c in a.setpoint], [255, 0, 0], lifetime=0.1)
+                    env.draw_line([c for c in a.position], [c for c in a.setpoint], [255, 0, 0], lifetime=0.1)
 
             # Send commands and step environment
             for a, control in zip(agent_list, control_list):
