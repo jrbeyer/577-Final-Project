@@ -4,7 +4,7 @@ from pynput import keyboard
 from typing import Tuple, List, Dict
 import time
 import my_configs as config
-from agent_wrapper import agent
+from agent_wrapper import Agent
 
 # number of environment ticks between control updates
 control_ticks_per_update = 5
@@ -26,17 +26,17 @@ listener = keyboard.Listener(
 listener.start()
 
 # Create list of agents, named by their index in the list
-def create_agent_list(cfg: Dict) -> List[agent]:
+def create_agent_list(cfg: Dict) -> List[Agent]:
     agent_list = []
     ticks_per_sec = cfg["ticks_per_sec"]
     for agent_cfg in cfg["agents"]:
-        agent_list.append(agent(name=agent_cfg["agent_name"], 
+        agent_list.append(Agent(name=agent_cfg["agent_name"], 
                                 env_refresh_rate=1/ticks_per_sec, 
                                 control_ticks_per_update=control_ticks_per_update))
     return agent_list
 
 # Update pose of all agents from the global state
-def update_all_agent_poses(agent_list: List[agent], state) -> None:
+def update_all_agent_poses(agent_list: List[Agent], state) -> None:
     for agent in agent_list:
         agent.update_pose(state[agent.name]['PoseSensor'])
 
@@ -47,7 +47,7 @@ def update_all_agent_poses(agent_list: List[agent], state) -> None:
 #           lines[i] is a tuple of (start_point, end_point) for the line to be 
 #           followed by agent i
 # returns: list of controls for each agent
-def control_all_agents(agent_list: List[agent], 
+def control_all_agents(agent_list: List[Agent], 
                        lines: List[Tuple[np.ndarray, np.ndarray]]
                        ) -> List[np.ndarray]:
     control_list = []
@@ -58,7 +58,7 @@ def control_all_agents(agent_list: List[agent],
 # Execute control loop under Lennard-Jones potentials for all agents
 # agent_list: list of all agents, as created by create_agent_list()
 # returns: list of controls for each agent
-def control_all_agents_lj(agent_list: List[agent], target_distance: float) -> List[np.ndarray]:
+def control_all_agents_lj(agent_list: List[Agent], target_distance: float) -> List[np.ndarray]:
     control_list = []
     for agent in agent_list:
         setpoint = agent.compute_lj_setpoint(agent_list, target_distance)
@@ -72,7 +72,7 @@ def control_all_agents_lj(agent_list: List[agent], target_distance: float) -> Li
     return control_list
 
 # create line list depending on type of scenario
-def create_line_list(agent_list: List[agent], scenario: str='simple') -> List[Tuple[np.ndarray, np.ndarray]]:
+def create_line_list(agent_list: List[Agent], scenario: str='simple') -> List[Tuple[np.ndarray, np.ndarray]]:
     lines = []
     if scenario == 'simple':
         for a in agent_list:
@@ -105,10 +105,10 @@ if __name__ == '__main__':
 
         iteration = 0
         target_distance = 10
-        while iteration < 50000:
-            if iteration == 6000:
+        while iteration < 15000:
+            if iteration == 5000:
                 target_distance = 4
-                env.draw_box([0, 0, 0], [5, 5, 5], [0, 255, 0], lifetime = 5)
+                env.draw_box([0, 0, -5], [5, 5, 5], [0, 255, 0], lifetime = 5)
             # Check for exit key
             if '`' in pressed_keys:
                 break

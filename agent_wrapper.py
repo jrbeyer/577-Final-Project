@@ -2,7 +2,7 @@ import numpy as np
 from typing import Tuple, List
 
 #   Wrap the agent in an object to make it easier to use
-class agent:
+class Agent:
     def __init__(self, name, env_refresh_rate, control_ticks_per_update):
         self.name = name
 
@@ -209,7 +209,7 @@ class agent:
     # agent_list: list of all agents in the environment (including self)
     # target_distance: target neighbor distance
     # returns: next setpoint
-    def compute_lj_setpoint(self, agent_list: List['agent'], target_distance: float) -> np.ndarray:
+    def compute_lj_setpoint(self, agent_list: List['Agent'], target_distance: float) -> np.ndarray:
         a = 12
         b = 6
         # compute the setpoint for the current agent
