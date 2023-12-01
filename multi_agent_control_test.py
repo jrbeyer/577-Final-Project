@@ -5,6 +5,8 @@ from typing import Tuple, List, Dict
 import time
 import my_configs as config
 from agent_wrapper import Agent
+from telemetry import Telemetry
+import queue
 
 # number of environment ticks between control updates
 control_ticks_per_update = 5
@@ -85,14 +87,31 @@ def create_line_list(agent_list: List[Agent], scenario: str='simple') -> List[Tu
 
     return lines
 
+# Create a row of telemetry data for all agents at this time step
+def create_telemetry_row(agent_list: List[Agent], time: float) -> List:
+    row = []
+    row.append(time)
+    for a in agent_list:
+        row.append(a.position[0])
+        row.append(a.position[1])
+        row.append(a.position[2])
+        row.append(a.yaw)
+        row.append(a.pitch)
+    return row
+
 if __name__ == '__main__':
     # Load config
     cfg = config.get_many_agent_test_cfg()
+    ticks_per_second = cfg["ticks_per_sec"]
     # Create agent list
     agent_list = create_agent_list(cfg)
 
+    telemetry_queue = queue.Queue()
+    telemeter = Telemetry(telemetry_queue)
+
     # Create environment
     with holoocean.make(scenario_cfg=cfg) as env:
+        telemeter.start()
         # Run simulation
         state = env.tick()
         update_all_agent_poses(agent_list, state)
@@ -120,9 +139,14 @@ if __name__ == '__main__':
                 control_list = control_all_agents_lj(agent_list, target_distance)
                 for a in agent_list:
                     env.draw_line([c for c in a.position], [c for c in a.setpoint], [255, 0, 0], lifetime=0.1)
+                # Write telemetry data
+                telemetry_row = create_telemetry_row(agent_list, iteration/ticks_per_second)
+                telemetry_queue.put(telemetry_row)
 
             # Send commands and step environment
             for a, control in zip(agent_list, control_list):
                 env.act(a.name, control)
             state = env.tick()
             iteration += 1
+
+        telemeter.stop()
