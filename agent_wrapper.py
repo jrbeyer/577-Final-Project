@@ -31,6 +31,9 @@ class agent:
 
         self.setpoint = np.array([0,0,0])
 
+        self.pitch_desired = 0
+        self.yaw_desired = 0
+
     def update_pose(self, pose):
         self.orientation = pose[0:3,0:3]
         self.position = pose[0:3,3]
@@ -121,8 +124,6 @@ class agent:
         midpoint = 0.3*(W_i1-W_i) + 0.7*u + W_i
         self.setpoint = midpoint
         yaw_desired = np.arctan2(midpoint[1]-position[1], midpoint[0]-position[0])*180/np.pi
-        # yaw_desired = np.arctan2(W_i1[1]-position[1], W_i1[0]-position[0])*180/np.pi
-
 
         Rz = np.array([[np.cos(alpha),  np.sin(alpha),  0],
                        [-np.sin(alpha), np.cos(alpha),  0],
@@ -136,12 +137,13 @@ class agent:
         # W_i_r = Rz*W_i
         # beta = np.arctan2(W_i_r[2]-W_i1_r[2], 
         #                   np.sqrt((W_i_r[0]-W_i1_r[0])**2 + (W_i_r[1]-W_i1_r[1])**2))
-
         # Ry = np.array([[np.cos(beta),   0,              -np.sin(beta)],
         #                [0,              1,              0],
         #                [np.sin(beta),   0,              np.cos(beta)]])
-
         # e = Ry*Rz*(position - W_i)
+
+        self.pitch_desired = pitch_desired
+        self.yaw_desired = yaw_desired
         
         return (yaw_desired[0], pitch_desired[0])
     
@@ -163,17 +165,18 @@ class agent:
         if l2norm < l2norm_stop_limit:
             attenuated_nominal_command = np.zeros(8)
 
-        # print('='*20)
-        # print(f'Agent {self.name}')
-        # print(f'Position: {self.position}')
-        # print(f'Yaw: {self.yaw}')
-        # print(f'Yaw desired: {yaw_desired}')
-        # print(f'Pitch: {self.pitch}')
-        # print(f'Pitch desired: {pitch_desired}')
-        # print(f'Yaw command: {yaw_command[0]}')
-        # print(f'Pitch command: {pitch_command[0]}')
-        # print(f'Final command: {self.nominal_command + yaw_command[0] + pitch_command[0]}')
-        # print('='*20)
+        if False:
+            print('='*20)
+            print(f'Agent {self.name}')
+            print(f'Position: {self.position}')
+            print(f'Yaw: {self.yaw}')
+            print(f'Yaw desired: {yaw_desired}')
+            print(f'Pitch: {self.pitch}')
+            print(f'Pitch desired: {pitch_desired}')
+            print(f'Yaw command: {yaw_command[0]}')
+            print(f'Pitch command: {pitch_command[0]}')
+            print(f'Final command: {self.nominal_command + yaw_command[0] + pitch_command[0]}')
+            print('='*20)
         return attenuated_nominal_command + yaw_command[0] + pitch_command[0]
     
     # Compute simple control law for turning to view a point
@@ -218,4 +221,6 @@ class agent:
                 target_norm = target_distance/distance_norm
                 unit_distance = distance/distance_norm
                 setpoint += (a*(target_norm)**a - 2*b*(target_norm)**b)*unit_distance
-        return setpoint / (len(agent_list)-1)
+        setpoint = setpoint / (len(agent_list)-1)
+        setpoint[2] = self.position[2]  # don't change depth
+        return setpoint

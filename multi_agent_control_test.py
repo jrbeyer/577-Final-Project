@@ -64,6 +64,11 @@ def control_all_agents_lj(agent_list: List[agent], target_distance: float) -> Li
         setpoint = agent.compute_lj_setpoint(agent_list, target_distance)
         line = (agent.position, setpoint)
         control_list.append(agent.compute_pure_pursuit_command(line[0], line[1]))
+        # if agent.name == 'auv0':
+            # print(f'LJ Setpoint:    {setpoint}')
+            # print(f'Agent setpoint: {agent.setpoint}')
+            # print(f'Pitch desired:  {agent.pitch_desired}')
+            # print(f'Pitch:          {agent.pitch}')
     return control_list
 
 # create line list depending on type of scenario
@@ -101,7 +106,7 @@ if __name__ == '__main__':
         iteration = 0
         target_distance = 10
         while iteration < 50000:
-            if iteration == 5000:
+            if iteration == 6000:
                 target_distance = 4
                 env.draw_box([0, 0, 0], [5, 5, 5], [0, 255, 0], lifetime = 5)
             # Check for exit key
