@@ -224,3 +224,59 @@ class Agent:
         setpoint = setpoint / (len(agent_list)-1)
         setpoint[2] = self.position[2]  # don't change depth
         return setpoint
+    
+    # Compute position of nearest neighbor
+    # agent_list: list of all agents in the environment (including self)
+    # returns: position of nearest neighbor
+    def compute_nearest_neighbor_position(self, agent_list: List['Agent']) -> np.ndarray:
+        nearest_neighbor = None
+        nearest_distance = np.inf
+        for other_agent in agent_list:
+            if other_agent.name != self.name: # names are unique
+                distance = self.position - other_agent.position
+                distance_norm = np.linalg.norm(distance)
+                if distance_norm < nearest_distance:
+                    nearest_distance = distance_norm
+                    nearest_neighbor = other_agent
+        return nearest_neighbor.position
+    
+    # compute if a point is within the target opening angle of the agent
+    # point: 3D point to check
+    # alpha: half opening angle of vision triangular prism in degrees
+    # returns: boolean
+    def is_point_in_angle(self, point: np.ndarray, alpha: float) -> bool:
+        f = self.orientation[:,0]
+        d = point - self.position
+        d_norm = np.linalg.norm(d)
+        d_unit = d / d_norm
+        relative_angle = abs(np.arccos(np.dot(d_unit, f))*180/np.pi)
+        return relative_angle < alpha
+
+    # Compute setpoint for emergent milling behaviors
+    # agent_list: list of all agents in the environment (including self)
+    # alpha: half opening angle of vision triangular prism in degrees
+    # returns: setpoint
+    def compute_milling_setpoint(self, agent_list: List['Agent'], 
+                                 alpha: float) -> np.ndarray:
+        TURN_DELTA_DEG = 0.5
+        TURN_DELTA_RAD = TURN_DELTA_DEG*np.pi/180
+        R1 = np.array([[np.cos(TURN_DELTA_RAD),  np.sin(TURN_DELTA_RAD),  0],
+                       [-np.sin(TURN_DELTA_RAD), np.cos(TURN_DELTA_RAD),  0],
+                       [0,                       0,                       1]])
+        R2 = np.array([[np.cos(-TURN_DELTA_RAD), np.sin(-TURN_DELTA_RAD), 0],
+                       [-np.sin(-TURN_DELTA_RAD),np.cos(-TURN_DELTA_RAD), 0],
+                       [0,                       0,                       1]])
+        setpoint = np.zeros(3)
+        f = self.orientation[:,0]
+        target_in_sight = False
+        for other_agent in agent_list:
+            if other_agent.name != self.name:
+                if self.is_point_in_angle(other_agent.position, alpha):
+                    target_in_sight = True
+                    break
+        if target_in_sight:
+            setpoint = self.position + 10*R1@f
+        else:
+            setpoint = self.position + 10*R2@f
+
+        return setpoint

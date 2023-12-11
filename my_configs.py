@@ -102,16 +102,21 @@ def get_many_agent_test_cfg():
     seed = 0
     rand.seed(seed)
     locations = []
-    bound = 30
+    # bound = 30
+    bound = 20
+    # bound = 15
+    # bound = 10
+    # bound_z = 2
+    bound_z = 1
     while len(locations) < 10:
         bad_point = False
         potential_x = rand.randint(-bound, bound)
         potential_y = rand.randint(-bound, bound)
-        potential_z = -10
+        potential_z = -10 + rand.randint(-bound_z, bound_z)
 
-        # make sure more than 2 meters from another agent
+        # make sure more than 4 meters from another agent
         for l in locations:
-            if np.linalg.norm(np.array([potential_x, potential_y, potential_z]) - np.array(l)) < 2:
+            if np.linalg.norm(np.array([potential_x, potential_y, potential_z]) - np.array(l)) < 4:
                 bad_point = True
         if bad_point: continue
         locations.append([potential_x, potential_y, potential_z])
@@ -132,7 +137,8 @@ def get_many_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": locations[0]
+            "location": locations[0],
+            "rotation_randomization": [0, 0, 3.14]
         },
         {
             "agent_name": "auv1",
@@ -143,7 +149,8 @@ def get_many_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": locations[1]
+            "location": locations[1],
+            "rotation_randomization": [0, 0, 3.14]
         },
         {
             "agent_name": "auv2",
@@ -154,7 +161,8 @@ def get_many_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": locations[2]
+            "location": locations[2],
+            "rotation_randomization": [0, 0, 3.14]
         },
         {
             "agent_name": "auv3",
@@ -165,7 +173,8 @@ def get_many_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": locations[3]
+            "location": locations[3],
+            "rotation_randomization": [0, 0, 3.14]
         },
         {
             "agent_name": "auv4",
@@ -176,7 +185,8 @@ def get_many_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": locations[4]
+            "location": locations[4],
+            "rotation_randomization": [0, 0, 3.14]
         },
         {
             "agent_name": "auv5",
@@ -187,7 +197,8 @@ def get_many_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": locations[5]
+            "location": locations[5],
+            "rotation_randomization": [0, 0, 3.14]
         },
         {
             "agent_name": "auv6",
@@ -198,7 +209,8 @@ def get_many_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": locations[6]
+            "location": locations[6],
+            "rotation_randomization": [0, 0, 3.14]
         },
         {
             "agent_name": "auv7",
@@ -209,7 +221,8 @@ def get_many_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": locations[7]
+            "location": locations[7],
+            "rotation_randomization": [0, 0, 3.14]
         },
         {
             "agent_name": "auv8",
@@ -220,7 +233,8 @@ def get_many_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": locations[8]
+            "location": locations[8],
+            "rotation_randomization": [0, 0, 3.14]
         },
         {
             "agent_name": "auv9",
@@ -231,7 +245,8 @@ def get_many_agent_test_cfg():
                 }
             ],
             "control_scheme": 0,
-            "location": locations[9]
+            "location": locations[9],
+            "rotation_randomization": [0, 0, 3.14]
         }
     ]
     }

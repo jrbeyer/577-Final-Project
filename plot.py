@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
-csvfile = 'telemetry_2023-12-03_15-59-56.csv'
+csvfile = 'telemetry_2023-12-11_11-22-00.csv'
 
 # Read the CSV file and store the data in a DataFrame
 data = pd.read_csv(csvfile)
@@ -47,6 +47,8 @@ def animate(frame):
     return lines
 
 animation = FuncAnimation(fig, animate, frames=len(time), interval=5, blit=True)
-# animation.save('animated_trajectories.gif', writer='imagemagick', fps=30)
-animation.save('animated_trajectories.mp4', writer='ffmpeg', fps=30)
+# animation.save('animated_trajectories.gif', writer='imagemagick', fps=30
+# animation.save('animated_trajectories.mp4', writer='ffmpeg', fps=30)
+# save at 4x speed
+# animation.save('animated_trajectories_4x.mp4', writer='ffmpeg', fps=120)
 plt.show()

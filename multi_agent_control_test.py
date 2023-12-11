@@ -73,6 +73,25 @@ def control_all_agents_lj(agent_list: List[Agent], target_distance: float) -> Li
             # print(f'Pitch:          {agent.pitch}')
     return control_list
 
+# Execute control loop using milling algorithm for all agents
+# agent_list: list of all agents, as created by create_agent_list()
+# alpha: half-angle of milling cone
+# returns: list of controls for each agent
+def control_all_agents_milling(agent_list: List[Agent], alpha: float) -> List[np.ndarray]:
+    control_list = []
+    for agent in agent_list:
+        setpoint = agent.compute_milling_setpoint(agent_list, alpha)
+        line = (agent.position, setpoint)
+        control_list.append(agent.compute_pure_pursuit_command(line[0], line[1]))
+        # if agent.name == 'auv0':
+        #     print(f'Position:       {agent.position}')
+        #     print(f'Neighbor pos:   {agent.compute_nearest_neighbor_position(agent_list)}')
+        #     print(f'Mill setpoint:  {setpoint}')
+        #     print(f'Agent setpoint: {agent.setpoint}')
+        #     print(f'Yaw desired:    {agent.yaw_desired}')
+        #     print(f'Yaw:            {agent.yaw}')
+    return control_list
+
 # create line list depending on type of scenario
 def create_line_list(agent_list: List[Agent], scenario: str='simple') -> List[Tuple[np.ndarray, np.ndarray]]:
     lines = []
@@ -99,6 +118,8 @@ def create_telemetry_row(agent_list: List[Agent], time: float) -> List:
         row.append(a.pitch)
     return row
 
+TELEMETRY_ON = True
+
 if __name__ == '__main__':
     # Load config
     cfg = config.get_many_agent_test_cfg()
@@ -106,12 +127,13 @@ if __name__ == '__main__':
     # Create agent list
     agent_list = create_agent_list(cfg)
 
-    telemetry_queue = queue.Queue()
-    telemeter = Telemetry(telemetry_queue)
+    if TELEMETRY_ON:
+        telemetry_queue = queue.Queue()
+        telemeter = Telemetry(telemetry_queue)
+        telemeter.start()
 
     # Create environment
     with holoocean.make(scenario_cfg=cfg) as env:
-        telemeter.start()
         # Run simulation
         state = env.tick()
         update_all_agent_poses(agent_list, state)
@@ -135,13 +157,15 @@ if __name__ == '__main__':
             update_all_agent_poses(agent_list, state)
             # Control all agents
             if iteration % control_ticks_per_update == 0:
-                # control_list = control_all_agents(agent_list, lines)
-                control_list = control_all_agents_lj(agent_list, target_distance)
+                # control_list = control_allsd_agents(agent_list, lines)
+                # control_list = control_all_agents_lj(agent_list, target_distance)
+                control_list = control_all_agents_milling(agent_list, alpha=15)
                 for a in agent_list:
                     env.draw_line([c for c in a.position], [c for c in a.setpoint], [255, 0, 0], lifetime=0.1)
                 # Write telemetry data
-                telemetry_row = create_telemetry_row(agent_list, iteration/ticks_per_second)
-                telemetry_queue.put(telemetry_row)
+                if TELEMETRY_ON:
+                    telemetry_row = create_telemetry_row(agent_list, iteration/ticks_per_second)
+                    telemetry_queue.put(telemetry_row)
 
             # Send commands and step environment
             for a, control in zip(agent_list, control_list):
@@ -149,4 +173,5 @@ if __name__ == '__main__':
             state = env.tick()
             iteration += 1
 
-        telemeter.stop()
+        if TELEMETRY_ON:
+            telemeter.stop()
