@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
-csvfile = 'telemetry_2023-12-12_12-50-08.csv'
+csvfile = 'telemetry_2023-12-12_13-16-56.csv'
 
 # Read the CSV file and store the data in a DataFrame
 data = pd.read_csv(csvfile)
@@ -52,3 +52,25 @@ animation = FuncAnimation(fig, animate, frames=len(time), interval=5, blit=True)
 # save at 4x speed
 # animation.save('animated_trajectories_4x.mp4', writer='ffmpeg', fps=120)
 plt.show()
+
+# create plot showing distance to centroid
+PLOT_CENTROID_DISTANCE = True
+
+# Compute the centroid at each timestep from data
+centroid_x_positions = agent_x_positions.mean(axis=1)
+centroid_y_positions = agent_y_positions.mean(axis=1)
+centroid_x_npframe = centroid_x_positions.to_numpy()
+centroid_y_npframe = centroid_y_positions.to_numpy()
+
+# Create a static plot of distance to centroid over time
+plt.figure()
+for agent in range(num_agents):
+    plt.plot(time, np.sqrt((agent_x_positions.iloc[:, agent] - centroid_x_positions)**2 + (agent_y_positions.iloc[:, agent] - centroid_y_positions)**2))
+
+plt.xlabel('Time (arbitrary units)')
+plt.ylabel('Distance to Centroid (m)')
+plt.title('Distance to Centroid over Time')
+plt.legend([f'Agent {i}' for i in range(num_agents)])
+plt.grid(True)
+plt.show()
+

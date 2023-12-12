@@ -147,7 +147,7 @@ if __name__ == '__main__':
 
         iteration = 0
         target_distance = 10
-        while iteration < 15000:
+        while iteration < 10000:
             if iteration == 7500:
                 target_distance = 4
                 env.draw_box([0, 0, -5], [5, 5, 5], [0, 255, 0], lifetime = 5)
