@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
-csvfile = 'telemetry_2023-12-11_11-22-00.csv'
+csvfile = 'telemetry_2023-12-12_12-50-08.csv'
 
 # Read the CSV file and store the data in a DataFrame
 data = pd.read_csv(csvfile)

@@ -97,6 +97,40 @@ def get_multi_agent_test_cfg():
     }
     return cfg
 
+def get_medium_agent_test_cfg():
+    seed = 0
+    rand.seed(seed)
+    agents_list = []
+
+    bound = 10
+    bound_z = 1
+    for i in range(7):
+        agents_list.append({
+            "agent_name": f"auv{i}",
+            "agent_type": "HoveringAUV",
+            "sensors": [
+                {
+                    "sensor_type": "PoseSensor"
+                }
+            ],
+            "control_scheme": 0,
+            "location": [0, 0, -5],
+            "rotation": [0, 0, rand.randint(0, 360)],
+            "location_randomization": [bound, bound, bound_z],
+            # "rotation_randomization": [0, 0, 180]
+        })
+
+    cfg = {
+    "name": "test_rgb_camera",
+    "world": "SimpleUnderwater",
+    "package_name": "Ocean",
+    "main_agent": "auv0",
+    "ticks_per_sec": 100,
+    "agents": agents_list
+    }
+
+    return cfg
+
 
 def get_many_agent_test_cfg():
     seed = 0
@@ -108,6 +142,7 @@ def get_many_agent_test_cfg():
     # bound = 10
     # bound_z = 2
     bound_z = 1
+    rand_vector = [0, 0, 180]
     while len(locations) < 10:
         bad_point = False
         potential_x = rand.randint(-bound, bound)
@@ -138,7 +173,7 @@ def get_many_agent_test_cfg():
             ],
             "control_scheme": 0,
             "location": locations[0],
-            "rotation_randomization": [0, 0, 3.14]
+            "rotation_randomization": rand_vector
         },
         {
             "agent_name": "auv1",
@@ -150,7 +185,7 @@ def get_many_agent_test_cfg():
             ],
             "control_scheme": 0,
             "location": locations[1],
-            "rotation_randomization": [0, 0, 3.14]
+            "rotation_randomization": rand_vector
         },
         {
             "agent_name": "auv2",
@@ -162,7 +197,7 @@ def get_many_agent_test_cfg():
             ],
             "control_scheme": 0,
             "location": locations[2],
-            "rotation_randomization": [0, 0, 3.14]
+            "rotation_randomization": rand_vector
         },
         {
             "agent_name": "auv3",
@@ -174,7 +209,7 @@ def get_many_agent_test_cfg():
             ],
             "control_scheme": 0,
             "location": locations[3],
-            "rotation_randomization": [0, 0, 3.14]
+            "rotation_randomization": rand_vector
         },
         {
             "agent_name": "auv4",
@@ -186,7 +221,7 @@ def get_many_agent_test_cfg():
             ],
             "control_scheme": 0,
             "location": locations[4],
-            "rotation_randomization": [0, 0, 3.14]
+            "rotation_randomization": rand_vector
         },
         {
             "agent_name": "auv5",
@@ -198,7 +233,7 @@ def get_many_agent_test_cfg():
             ],
             "control_scheme": 0,
             "location": locations[5],
-            "rotation_randomization": [0, 0, 3.14]
+            "rotation_randomization": rand_vector
         },
         {
             "agent_name": "auv6",
@@ -210,7 +245,7 @@ def get_many_agent_test_cfg():
             ],
             "control_scheme": 0,
             "location": locations[6],
-            "rotation_randomization": [0, 0, 3.14]
+            "rotation_randomization": rand_vector
         },
         {
             "agent_name": "auv7",
@@ -222,7 +257,7 @@ def get_many_agent_test_cfg():
             ],
             "control_scheme": 0,
             "location": locations[7],
-            "rotation_randomization": [0, 0, 3.14]
+            "rotation_randomization": rand_vector
         },
         {
             "agent_name": "auv8",
@@ -234,7 +269,7 @@ def get_many_agent_test_cfg():
             ],
             "control_scheme": 0,
             "location": locations[8],
-            "rotation_randomization": [0, 0, 3.14]
+            "rotation_randomization": rand_vector
         },
         {
             "agent_name": "auv9",
@@ -246,7 +281,7 @@ def get_many_agent_test_cfg():
             ],
             "control_scheme": 0,
             "location": locations[9],
-            "rotation_randomization": [0, 0, 3.14]
+            "rotation_randomization": rand_vector
         }
     ]
     }

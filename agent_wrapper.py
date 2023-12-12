@@ -247,6 +247,7 @@ class Agent:
     def is_point_in_angle(self, point: np.ndarray, alpha: float) -> bool:
         f = self.orientation[:,0]
         d = point - self.position
+        d[2] = f[2] # don't consider depth
         d_norm = np.linalg.norm(d)
         d_unit = d / d_norm
         relative_angle = abs(np.arccos(np.dot(d_unit, f))*180/np.pi)

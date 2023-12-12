@@ -122,7 +122,8 @@ TELEMETRY_ON = True
 
 if __name__ == '__main__':
     # Load config
-    cfg = config.get_many_agent_test_cfg()
+    # cfg = config.get_many_agent_test_cfg()
+    cfg = config.get_medium_agent_test_cfg()
     ticks_per_second = cfg["ticks_per_sec"]
     # Create agent list
     agent_list = create_agent_list(cfg)
