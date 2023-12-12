@@ -77,10 +77,10 @@ def control_all_agents_lj(agent_list: List[Agent], target_distance: float) -> Li
 # agent_list: list of all agents, as created by create_agent_list()
 # alpha: half-angle of milling cone
 # returns: list of controls for each agent
-def control_all_agents_milling(agent_list: List[Agent], alpha: float) -> List[np.ndarray]:
+def control_all_agents_milling(agent_list: List[Agent], alpha: float, object_of_interest: np.ndarray) -> List[np.ndarray]:
     control_list = []
     for agent in agent_list:
-        setpoint = agent.compute_milling_setpoint(agent_list, alpha)
+        setpoint = agent.compute_milling_with_object_setpoint(agent_list, alpha, object_of_interest)
         line = (agent.position, setpoint)
         control_list.append(agent.compute_pure_pursuit_command(line[0], line[1]))
         # if agent.name == 'auv0':
@@ -118,6 +118,7 @@ def create_telemetry_row(agent_list: List[Agent], time: float) -> List:
         row.append(a.pitch)
     return row
 
+# TELEMETRY_ON = False
 TELEMETRY_ON = True
 
 if __name__ == '__main__':
@@ -147,10 +148,12 @@ if __name__ == '__main__':
 
         iteration = 0
         target_distance = 10
-        while iteration < 10000:
+        object_of_interest = None
+        while iteration < 15000:
             if iteration == 7500:
+                object_of_interest = [7, -7, -5]
                 target_distance = 4
-                env.draw_box([0, 0, -5], [5, 5, 5], [0, 255, 0], lifetime = 5)
+                env.draw_box(object_of_interest, [0.5, 0.5, 0.5], [0, 255, 0], lifetime = 0)
             # Check for exit key
             if '`' in pressed_keys:
                 break
@@ -160,7 +163,7 @@ if __name__ == '__main__':
             if iteration % control_ticks_per_update == 0:
                 # control_list = control_allsd_agents(agent_list, lines)
                 # control_list = control_all_agents_lj(agent_list, target_distance)
-                control_list = control_all_agents_milling(agent_list, alpha=15)
+                control_list = control_all_agents_milling(agent_list, alpha=15, object_of_interest=object_of_interest)
                 for a in agent_list:
                     env.draw_line([c for c in a.position], [c for c in a.setpoint], [255, 0, 0], lifetime=0.1)
                 # Write telemetry data

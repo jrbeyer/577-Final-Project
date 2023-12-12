@@ -281,3 +281,56 @@ class Agent:
             setpoint = self.position + 10*R2@f
 
         return setpoint
+    
+    # helper function to compute the point tangent to circle of radius R around
+    # the ojbect at position object_position, passing through self.position
+    # object_position: position of object to encircle
+    # R: radius of circle
+    # returns: tangent point ndarray
+    def compute_tangent_point(self, object_position: np.ndarray, R: float) -> np.ndarray:
+        d = object_position - self.position
+        d_norm = np.linalg.norm(d)
+        t_norm = np.sqrt(d_norm**2 - R**2)
+        gamma = np.arccos((d_norm**2 + t_norm**2 - R**2)/(2*d_norm*t_norm))
+        R1 = np.array( [[np.cos(gamma),  np.sin(gamma),  0],
+                        [-np.sin(gamma), np.cos(gamma),  0],
+                        [0,              0,              1]])
+        return (R1@d * (t_norm/d_norm)) + self.position
+
+    
+    # Compute setpoint for emergent milling behaviors with object encirclement
+    # agent_list: list of all agents in the environment (including self)
+    # alpha: half opening angle of vision triangular prism in degrees
+    # object_position: position of object to encircle
+    # returns: setpoint
+    def compute_milling_with_object_setpoint(self, agent_list: List['Agent'], 
+                                             alpha: float, 
+                                             object_position: np.ndarray) -> np.ndarray:
+        if object_position is None:
+            return self.compute_milling_setpoint(agent_list, alpha)
+        TURN_DELTA_DEG = 0.5
+        TURN_DELTA_RAD = TURN_DELTA_DEG*np.pi/180
+        R1 = np.array([[np.cos(TURN_DELTA_RAD),  np.sin(TURN_DELTA_RAD),  0],
+                       [-np.sin(TURN_DELTA_RAD), np.cos(TURN_DELTA_RAD),  0],
+                       [0,                       0,                       1]])
+        R2 = np.array([[np.cos(-TURN_DELTA_RAD), np.sin(-TURN_DELTA_RAD), 0],
+                       [-np.sin(-TURN_DELTA_RAD),np.cos(-TURN_DELTA_RAD), 0],
+                       [0,                       0,                       1]])
+        N = len(agent_list) + 1
+        target_object_radius = 0.5/(np.cos(alpha*np.pi/180) - np.cos(2*np.pi/N - alpha*np.pi/180))
+        object_tangent_point = self.compute_tangent_point(object_position, target_object_radius)
+        object_in_sight = self.is_point_in_angle(object_tangent_point, alpha)
+        target_in_sight = False
+        for other_agent in agent_list:
+            if other_agent.name != self.name:
+                if self.is_point_in_angle(other_agent.position, alpha):
+                    target_in_sight = True
+                    break
+        f = self.orientation[:,0]
+        setpoint = np.zeros(3)
+        if target_in_sight or object_in_sight:
+            setpoint = self.position + 10*R1@f
+        else:
+            setpoint = self.position + 10*R2@f
+
+        return setpoint
