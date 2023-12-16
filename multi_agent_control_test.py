@@ -104,6 +104,12 @@ def create_line_list(agent_list: List[Agent], scenario: str='simple') -> List[Tu
             W_i1 = np.array([0, 0, -5])
             lines.append((a.position, W_i1))
 
+    if scenario == 'single':
+        for a in agent_list:
+            W_i = np.array([4, 4, -5])
+            w_i1 = np.array([-25, -25, -8])
+            lines.append((W_i, w_i1))
+
     return lines
 
 # Create a row of telemetry data for all agents at this time step
@@ -124,7 +130,8 @@ TELEMETRY_ON = True
 if __name__ == '__main__':
     # Load config
     # cfg = config.get_many_agent_test_cfg()
-    cfg = config.get_medium_agent_test_cfg()
+    # cfg = config.get_medium_agent_test_cfg()
+    cfg = config.get_double_agent_test_cfg()
     ticks_per_second = cfg["ticks_per_sec"]
     # Create agent list
     agent_list = create_agent_list(cfg)
@@ -141,7 +148,7 @@ if __name__ == '__main__':
         update_all_agent_poses(agent_list, state)
 
         # Create line list
-        lines = create_line_list(agent_list, scenario='middle')
+        lines = create_line_list(agent_list, scenario='single')
         control_list = []
         for a in agent_list:
             control_list.append(a.nominal_command)
@@ -161,9 +168,9 @@ if __name__ == '__main__':
             update_all_agent_poses(agent_list, state)
             # Control all agents
             if iteration % control_ticks_per_update == 0:
-                # control_list = control_allsd_agents(agent_list, lines)
+                control_list = control_all_agents(agent_list, lines)
                 # control_list = control_all_agents_lj(agent_list, target_distance)
-                control_list = control_all_agents_milling(agent_list, alpha=15, object_of_interest=object_of_interest)
+                # control_list = control_all_agents_milling(agent_list, alpha=15, object_of_interest=object_of_interest)
                 for a in agent_list:
                     env.draw_line([c for c in a.position], [c for c in a.setpoint], [255, 0, 0], lifetime=0.1)
                 # Write telemetry data
