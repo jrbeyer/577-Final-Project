@@ -150,7 +150,7 @@ def get_medium_agent_test_cfg():
 
     bound = 10
     bound_z = 1
-    for i in range(6):
+    for i in range(10):
         agents_list.append({
             "agent_name": f"auv{i}",
             "agent_type": "HoveringAUV",

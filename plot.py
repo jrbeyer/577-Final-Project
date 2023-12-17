@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from matplotlib.animation import FuncAnimation
 
-csvfile = 'telemetry_2023-12-12_15-34-37.csv'
+csvfile = 'telemetry_2023-12-12_12-50-08.csv'
 
 # Read the CSV file and store the data in a DataFrame
 data = pd.read_csv(csvfile)
@@ -14,19 +14,62 @@ num_agents = int((len(data.columns) - 1) / 5)
 agent_x_positions = data[[f'agent_{i}_x' for i in range(num_agents)]]  # Update with the appropriate column names
 agent_y_positions = data[[f'agent_{i}_y' for i in range(num_agents)]]
 
-# print(agent_x_positions)
+# print(f'num agents: {num_agents}')
+# print(f'num time steps: {len(time)}')
 
-# Create a static plot of trajectories in the x-y plane
-plt.figure()
-for agent in range(num_agents):
-    # print(agent_x_positions.iloc[:, agent])
-    plt.plot(agent_x_positions.iloc[:, agent], agent_y_positions.iloc[:, agent])
-plt.xlabel('X (m)')
-plt.ylabel('Y (m)')
-plt.title('Trajectories in the X-Y Plane')
-plt.legend([f'Agent {i}' for i in range(num_agents)])
-plt.grid(True)
-plt.show()
+
+
+# # plot the first 0.1 seconds of the trajectories
+# plt.figure()
+# for agent in range(num_agents):
+#     plt.plot(agent_x_positions.iloc[:1500, agent], agent_y_positions.iloc[:1500, agent])
+# plt.xlabel('X (m)')
+# plt.ylabel('Y (m)')
+# plt.title('Trajectories in the X-Y Plane')
+# plt.legend([f'Agent {i}' for i in range(num_agents)])
+# plt.grid(True)
+# plt.show()
+
+# # plot the first 75/2 seconds of the trajectories
+# plt.figure()
+# for agent in range(num_agents):
+#     plt.plot(agent_x_positions.iloc[:1600, agent], agent_y_positions.iloc[:1600, agent])
+# plt.plot(7, -7, 'sg')
+# plt.xlabel('X (m)')
+# plt.ylabel('Y (m)')
+# plt.title('Trajectories in the X-Y Plane')
+# plt.legend([f'Agent {i}' for i in range(num_agents)])
+# plt.grid(True)
+# plt.show()
+
+
+# # plot the last 10 seconds of the trajectories
+# plt.figure()
+# for agent in range(num_agents):
+#     plt.plot(agent_x_positions.iloc[:1800, agent], agent_y_positions.iloc[:1800, agent])
+# plt.plot(7, -7, 'sg')
+# plt.xlabel('X (m)')
+# plt.ylabel('Y (m)')
+# plt.title('Trajectories in the X-Y Plane')
+# plt.legend([f'Agent {i}' for i in range(num_agents)])
+# plt.grid(True)
+# plt.show()
+
+
+# # Create a static plot of trajectories in the x-y plane
+# plt.figure()
+# for agent in range(num_agents):
+#     # print(agent_x_positions.iloc[:, agent])
+#     plt.plot(agent_x_positions.iloc[:, agent], agent_y_positions.iloc[:, agent])
+# plt.plot(7, -7, 'sg')
+# plt.xlabel('X (m)')
+# plt.ylabel('Y (m)')
+# plt.title('Trajectories in the X-Y Plane')
+# plt.legend([f'Agent {i}' for i in range(num_agents)])
+# plt.grid(True)
+# plt.show()
+
+
 
 # Create an animated plot of trajectories in the x-y plane
 fig, ax = plt.subplots()
@@ -51,7 +94,7 @@ animation = FuncAnimation(fig, animate, frames=len(time), interval=5, blit=True)
 # animation.save('animated_trajectories.mp4', writer='ffmpeg', fps=30)
 # save at 4x speed
 # animation.save('animated_trajectories_4x.mp4', writer='ffmpeg', fps=120)
-plt.show()
+# plt.show()
 
 # create plot showing distance to centroid
 PLOT_CENTROID_DISTANCE = True

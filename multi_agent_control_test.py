@@ -129,9 +129,9 @@ TELEMETRY_ON = True
 
 if __name__ == '__main__':
     # Load config
-    # cfg = config.get_many_agent_test_cfg()
+    cfg = config.get_many_agent_test_cfg()
     # cfg = config.get_medium_agent_test_cfg()
-    cfg = config.get_double_agent_test_cfg()
+    # cfg = config.get_double_agent_test_cfg()
     ticks_per_second = cfg["ticks_per_sec"]
     # Create agent list
     agent_list = create_agent_list(cfg)
@@ -158,9 +158,11 @@ if __name__ == '__main__':
         object_of_interest = None
         while iteration < 15000:
             if iteration == 7500:
-                object_of_interest = [7, -7, -5]
                 target_distance = 4
-                env.draw_box(object_of_interest, [0.5, 0.5, 0.5], [0, 255, 0], lifetime = 0)
+                # pass
+                # object_of_interest = [7, -7, -5]
+                # target_distance = 4
+                # env.draw_box(object_of_interest, [0.5, 0.5, 0.5], [0, 255, 0], lifetime = 0)
             # Check for exit key
             if '`' in pressed_keys:
                 break
@@ -168,8 +170,8 @@ if __name__ == '__main__':
             update_all_agent_poses(agent_list, state)
             # Control all agents
             if iteration % control_ticks_per_update == 0:
-                control_list = control_all_agents(agent_list, lines)
-                # control_list = control_all_agents_lj(agent_list, target_distance)
+                # control_list = control_all_agents(agent_list, lines)
+                control_list = control_all_agents_lj(agent_list, target_distance)
                 # control_list = control_all_agents_milling(agent_list, alpha=15, object_of_interest=object_of_interest)
                 for a in agent_list:
                     env.draw_line([c for c in a.position], [c for c in a.setpoint], [255, 0, 0], lifetime=0.1)
